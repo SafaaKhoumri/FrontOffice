@@ -278,7 +278,7 @@ public class DataLoader implements CommandLineRunner {
             menuNouvelleDeclTransit.setTitle("Nouvelle Déclaration");
             menuNouvelleDeclTransit.setIcone("plus-circle");
             menuNouvelleDeclTransit.setActif(true);
-            menuNouvelleDeclTransit.setUrl("/transitaire/declarations/nouvelle");
+            menuNouvelleDeclTransit.setUrl("https://www.google.com");
             menuNouvelleDeclTransit.setMenuOrder(1);
             menuNouvelleDeclTransit.setCreePar(utilisateur);
             menuNouvelleDeclTransit.getRole().add(roleTransitaire);
@@ -293,7 +293,10 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("✅ Menu nouvelle déclaration créé et lié au groupe");
         } else {
             menuNouvelleDeclTransit = existingMenuNouvelleDeclTransit.get();
-            System.out.println("ℹ️ Menu nouvelle déclaration existe déjà");
+            // ⭐ AJOUTEZ CETTE LIGNE POUR FORCER LA MISE À JOUR
+            menuNouvelleDeclTransit.setUrl("https://www.google.com");
+            menuRepo.save(menuNouvelleDeclTransit);
+            System.out.println("ℹ️ Menu nouvelle déclaration existe déjà - URL mise à jour");
         }
         Menu menuListeDeclTransit = null;
         Optional<Menu> existingMenuListeDeclTransit = menuRepo.findByCode("MENU_LIST_DECL_TRANS");

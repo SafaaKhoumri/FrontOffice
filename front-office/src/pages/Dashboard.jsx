@@ -22,7 +22,11 @@ import {
   AlertTriangle,
   Eye,
   Calendar,
-  MapPin
+  MapPin,
+  ExternalLink,
+  ArrowLeft,
+  AlertCircle,
+  Construction
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -34,6 +38,14 @@ const Dashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [expandedMenus, setExpandedMenus] = useState({});
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  
+  // ⭐ NOUVEAUX ÉTATS POUR L'IFRAME ET MESSAGES
+  const [currentUrl, setCurrentUrl] = useState(null);
+  const [currentMenuTitle, setCurrentMenuTitle] = useState('');
+  const [currentMenuData, setCurrentMenuData] = useState(null);
+  const [showIframe, setShowIframe] = useState(false);
+  const [showEmptyUrlMessage, setShowEmptyUrlMessage] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(false);
   
   // États pour les données RÉELLES
   const [portailData, setPortailData] = useState(null);
@@ -134,12 +146,71 @@ const Dashboard = () => {
     }));
   };
 
+  // ⭐ FONCTION POUR VÉRIFIER SI UNE URL EST VIDE OU NON IMPLÉMENTÉE
+  const isEmptyOrNotImplemented = (url) => {
+    if (!url || url.trim() === '') return true;
+    
+    // Vérifier si c'est une URL relative qui commence par / mais qui n'est pas complète
+    if (url.startsWith('/') && !url.includes('http')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // ⭐ FONCTION MODIFIÉE POUR GÉRER L'AFFICHAGE DE L'IFRAME ET MESSAGES
   const handleMenuClick = (menuItem) => {
     setActiveMenu(menuItem.id || menuItem.code);
+    setCurrentMenuData(menuItem);
+    
     if (menuItem.menus && menuItem.menus.length > 0) {
+      // Si c'est un groupe de menus, toggle l'expansion
       toggleMenu(menuItem.id || menuItem.code);
+      return;
     }
-    console.log('📍 Navigation vers:', menuItem);
+    
+    const menuTitle = menuItem.title || menuItem.nom;
+    const menuUrl = menuItem.url;
+    
+    // Vérifier si l'URL est vide ou non implémentée
+    if (isEmptyOrNotImplemented(menuUrl)) {
+      console.log('⚠️ URL vide ou non implémentée pour le menu:', menuTitle);
+      setCurrentMenuTitle(menuTitle);
+      setCurrentUrl(menuUrl);
+      setShowEmptyUrlMessage(true);
+      setShowIframe(false);
+    } else {
+      // URL valide, afficher dans l'iframe
+      console.log('🌐 Navigation vers URL:', menuUrl, 'pour le menu:', menuTitle);
+      setCurrentUrl(menuUrl);
+      setCurrentMenuTitle(menuTitle);
+      setShowIframe(true);
+      setShowEmptyUrlMessage(false);
+      setIframeLoading(true);
+    }
+    
+    console.log('📍 Menu cliqué:', menuItem);
+  };
+
+  // ⭐ FONCTION POUR RETOURNER AU DASHBOARD
+  const handleBackToDashboard = () => {
+    setShowIframe(false);
+    setShowEmptyUrlMessage(false);
+    setCurrentUrl(null);
+    setCurrentMenuTitle('');
+    setCurrentMenuData(null);
+    setActiveMenu('dashboard');
+  };
+
+  // ⭐ FONCTION POUR GÉRER LE CHARGEMENT DE L'IFRAME
+  const handleIframeLoad = () => {
+    setIframeLoading(false);
+    console.log('✅ Iframe chargée pour:', currentUrl);
+  };
+
+  const handleIframeError = () => {
+    setIframeLoading(false);
+    console.log('❌ Erreur de chargement iframe pour:', currentUrl);
   };
 
   // États de chargement et d'erreur
@@ -225,7 +296,7 @@ const Dashboard = () => {
         <nav className="mt-6 px-3">
           {/* Dashboard */}
           <button
-            onClick={() => setActiveMenu('dashboard')}
+            onClick={() => handleBackToDashboard()}
             className={`w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors mb-1 ${
               activeMenu === 'dashboard'
                 ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
@@ -264,6 +335,8 @@ const Dashboard = () => {
                   <div className="ml-6 mt-1 space-y-1">
                     {group.menus.map((menu) => {
                       const MenuIcon = getMenuIcon(menu.code);
+                      const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+                      
                       return (
                         <button
                           key={menu.id}
@@ -276,6 +349,11 @@ const Dashboard = () => {
                         >
                           <MenuIcon size={16} />
                           <span className="ml-3">{menu.nom}</span>
+                          {hasValidUrl ? (
+                            <ExternalLink size={12} className="ml-auto text-gray-400" />
+                          ) : (
+                            <Construction size={12} className="ml-auto text-orange-400" />
+                          )}
                         </button>
                       );
                     })}
@@ -288,6 +366,8 @@ const Dashboard = () => {
           {/* Menus directs RÉELS */}
           {portailData.menus && portailData.menus.map((menu) => {
             const MenuIcon = getMenuIcon(menu.code);
+            const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+            
             return (
               <div key={menu.id} className="mb-1">
                 <button
@@ -299,7 +379,16 @@ const Dashboard = () => {
                   }`}
                 >
                   <MenuIcon size={20} />
-                  {sidebarOpen && <span className="ml-3 font-medium">{menu.nom}</span>}
+                  {sidebarOpen && (
+                    <>
+                      <span className="ml-3 font-medium">{menu.nom}</span>
+                      {hasValidUrl ? (
+                        <ExternalLink size={12} className="ml-auto text-gray-400" />
+                      ) : (
+                        <Construction size={12} className="ml-auto text-orange-400" />
+                      )}
+                    </>
+                  )}
                 </button>
               </div>
             );
@@ -319,9 +408,38 @@ const Dashboard = () => {
               >
                 <Menu size={20} />
               </button>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {portailData.nom}
-              </h2>
+              
+              {/* ⭐ AFFICHAGE CONDITIONNEL DU TITRE */}
+              {(showIframe || showEmptyUrlMessage) && currentMenuTitle ? (
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handleBackToDashboard}
+                    className="p-1 rounded hover:bg-gray-100 transition-colors"
+                    title="Retour au tableau de bord"
+                  >
+                    <ArrowLeft size={18} className="text-gray-600" />
+                  </button>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {currentMenuTitle}
+                  </h2>
+                  {showIframe && currentUrl && (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <ExternalLink size={14} className="mr-1" />
+                      {currentUrl}
+                    </div>
+                  )}
+                  {showEmptyUrlMessage && (
+                    <div className="flex items-center text-sm text-orange-600">
+                      <Construction size={14} className="mr-1" />
+                      Non implémenté
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {portailData.nom}
+                </h2>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -392,152 +510,262 @@ const Dashboard = () => {
           </div>
         </header>
 
-        {/* Contenu principal - VRAIES données */}
-        <main className="flex-1 overflow-auto p-6">
-          {/* Message de bienvenue */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Bienvenue, {userData?.nom?.split(' ')[0] || 'Utilisateur'} ! 👋
-            </h1>
-            <p className="text-gray-600 text-lg">
-              {portailData.description || `Portail ${portailData.nom}`}
-            </p>
-          </div>
-
-          {/* Informations du portail */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Carte principale du portail */}
-            <div className="lg:col-span-2">
-              <div 
-                className="rounded-xl p-8 text-white"
-                style={{ 
-                  background: `linear-gradient(135deg, ${portailData.couleurTheme || '#3B82F6'}, ${portailData.couleurTheme ? portailData.couleurTheme + 'CC' : '#8B5CF6'})` 
-                }}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{portailData.nom}</h2>
-                    <p className="text-white opacity-90">
-                      Code portail: <span className="font-mono">{portailData.code}</span>
-                    </p>
+        {/* ⭐ CONTENU PRINCIPAL AVEC IFRAME ET MESSAGE D'URL VIDE */}
+        <main className="flex-1 overflow-hidden">
+          {showIframe && currentUrl ? (
+            <div className="h-full relative">
+              {/* Indicateur de chargement */}
+              {iframeLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                  <div className="text-center">
+                    <RefreshCw size={32} className="text-blue-500 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-600">Chargement de {currentMenuTitle}...</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm opacity-75">Statut</div>
-                    <div className="text-lg font-semibold">
-                      {portailData.actif ? '✅ Actif' : '❌ Inactif'}
-                    </div>
-                  </div>
+                </div>
+              )}
+              
+              {/* ⭐ IFRAME POUR AFFICHER LE CONTENU DU MENU */}
+              <iframe
+                src={currentUrl}
+                title={currentMenuTitle}
+                className="w-full h-full border-0"
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                sandbox="allow-same-origin allow-scripts allow-forms allow-navigation"
+              />
+            </div>
+          ) : showEmptyUrlMessage ? (
+            /* ⭐ MESSAGE POUR URL VIDE OU NON IMPLÉMENTÉE */
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="text-center max-w-lg mx-auto p-8">
+                <div className="mb-6">
+                  <Construction size={64} className="text-orange-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                    Fonctionnalité en développement
+                  </h2>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm opacity-75">Groupes de menus</div>
-                    <div className="text-2xl font-bold">
-                      {portailData.groupMenu?.length || 0}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm opacity-75">Menus directs</div>
-                    <div className="text-2xl font-bold">
-                      {portailData.menus?.length || 0}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Informations utilisateur */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Votre Profil</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-gray-500">Nom</div>
-                  <div className="font-medium">{userData?.nom || 'N/A'}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Email</div>
-                  <div className="font-medium text-sm">{userData?.email || 'N/A'}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Rôle</div>
-                  <div className="font-medium">{userData?.roleCode || 'N/A'}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Dernière connexion</div>
-                  <div className="font-medium">Aujourd'hui</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Menus disponibles */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Menus disponibles</h3>
-              <p className="text-gray-600 text-sm mt-1">Fonctionnalités accessibles dans ce portail</p>
-            </div>
-            
-            <div className="p-6">
-              {/* Groupes de menus */}
-              {portailData.groupMenu && portailData.groupMenu.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Groupes de menus</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {portailData.groupMenu.map((group) => (
-                      <div key={group.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                          <h5 className="font-medium text-gray-900">{group.nom}</h5>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {group.menus?.length || 0} menus
-                          </span>
-                        </div>
-                        {group.menus && group.menus.length > 0 && (
-                          <div className="space-y-1">
-                            {group.menus.map((menu) => {
-                              const MenuIcon = getMenuIcon(menu.code);
-                              return (
-                                <div key={menu.id} className="flex items-center text-sm text-gray-600">
-                                  <MenuIcon size={14} className="mr-2" />
-                                  {menu.nom}
-                                </div>
-                              );
-                            })}
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle size={20} className="text-orange-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="text-gray-700 mb-2">
+                        Le menu <strong>"{currentMenuTitle}"</strong> contient une URL{' '}
+                        {!currentUrl || currentUrl.trim() === '' ? (
+                          <span className="text-red-600 font-mono">vide</span>
+                        ) : (
+                          <>
+                            relative <span className="text-blue-600 font-mono">({currentUrl})</span>
+                          </>
+                        )} qui n'est pas encore implémentée.
+                      </p>
+                      
+                      {currentMenuData && (
+                        <div className="mt-4 p-3 bg-gray-10 rounded border text-sm">
+                          <h4 className="font-medium text-gray-900 mb-2">Informations du menu :</h4>
+                          <div className="space-y-1 text-gray-600">
+                            <div><span className="font-medium">Code:</span> {currentMenuData.code || 'N/A'}</div>
+                            <div><span className="font-medium">ID:</span> {currentMenuData.id || 'N/A'}</div>
+                            <div><span className="font-medium">URL:</span> {currentUrl || 'Vide'}</div>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Menus directs */}
-              {portailData.menus && portailData.menus.length > 0 && (
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Menus directs</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {portailData.menus.map((menu) => {
-                      const MenuIcon = getMenuIcon(menu.code);
-                      return (
-                        <div key={menu.id} className="flex items-center p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
-                          <MenuIcon size={18} className="mr-3 text-gray-600" />
-                          <span className="font-medium text-gray-900">{menu.nom}</span>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Aucun menu */}
-              {(!portailData.groupMenu || portailData.groupMenu.length === 0) && 
-               (!portailData.menus || portailData.menus.length === 0) && (
-                <div className="text-center py-8">
-                  <Eye size={48} className="text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Aucun menu configuré pour ce portail</p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={handleBackToDashboard}
+                    className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <ArrowLeft size={18} className="mr-2" />
+                    Retour au tableau de bord
+                  </button>
+                  
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="flex items-center px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    <RefreshCw size={18} className="mr-2" />
+                    Actualiser
+                  </button>
                 </div>
-              )}
+
+                <div className="mt-6 text-sm text-gray-500">
+                  <p>Cette fonctionnalité sera disponible dans une prochaine mise à jour.</p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Contenu du dashboard par défaut */
+            <div className="p-6 overflow-auto">
+              {/* Message de bienvenue */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Bienvenue, {userData?.nom?.split(' ')[0] || 'Utilisateur'} ! 👋
+                </h1>
+                <p className="text-gray-600 text-lg">
+                  {portailData.description || `Portail ${portailData.nom}`}
+                </p>
+              </div>
+
+              {/* Informations du portail */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Carte principale du portail */}
+                <div className="lg:col-span-2">
+                  <div 
+                    className="rounded-xl p-8 text-white"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${portailData.couleurTheme || '#3B82F6'}, ${portailData.couleurTheme ? portailData.couleurTheme + 'CC' : '#8B5CF6'})` 
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2">{portailData.nom}</h2>
+                        <p className="text-white opacity-90">
+                          Code portail: <span className="font-mono">{portailData.code}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm opacity-75">Statut</div>
+                        <div className="text-lg font-semibold">
+                          {portailData.actif ? '✅ Actif' : '❌ Inactif'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm opacity-75">Groupes de menus</div>
+                        <div className="text-2xl font-bold">
+                          {portailData.groupMenu?.length || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm opacity-75">Menus directs</div>
+                        <div className="text-2xl font-bold">
+                          {portailData.menus?.length || 0}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations utilisateur */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Votre Profil</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm text-gray-500">Nom</div>
+                      <div className="font-medium">{userData?.nom || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Email</div>
+                      <div className="font-medium text-sm">{userData?.email || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Rôle</div>
+                      <div className="font-medium">{userData?.roleCode || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Dernière connexion</div>
+                      <div className="font-medium">Aujourd'hui</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menus disponibles */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900">Menus disponibles</h3>
+                  <p className="text-gray-600 text-sm mt-1">Cliquez sur un menu pour accéder à ses fonctionnalités</p>
+                </div>
+                
+                <div className="p-6">
+                  {/* Groupes de menus */}
+                  {portailData.groupMenu && portailData.groupMenu.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Groupes de menus</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {portailData.groupMenu.map((group) => (
+                          <div key={group.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-gray-900">{group.nom}</h5>
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {group.menus?.length || 0} menus
+                              </span>
+                            </div>
+                            {group.menus && group.menus.length > 0 && (
+                              <div className="space-y-1">
+                                {group.menus.map((menu) => {
+                                  const MenuIcon = getMenuIcon(menu.code);
+                                  const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+                                  return (
+                                    <button
+                                      key={menu.id}
+                                      onClick={() => handleMenuClick(menu)}
+                                      className="w-full flex items-center text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
+                                    >
+                                      <MenuIcon size={14} className="mr-2" />
+                                      {menu.nom}
+                                      {hasValidUrl ? (
+                                        <ExternalLink size={12} className="ml-auto" />
+                                      ) : (
+                                        <Construction size={12} className="ml-auto text-orange-400" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Menus directs */}
+                  {portailData.menus && portailData.menus.length > 0 && (
+                    <div>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Menus directs</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {portailData.menus.map((menu) => {
+                          const MenuIcon = getMenuIcon(menu.code);
+                          const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+                          return (
+                            <button
+                              key={menu.id}
+                              onClick={() => handleMenuClick(menu)}
+                              className="flex items-center p-3 border border-gray-200 rounded-lg hover:shadow-sm hover:bg-blue-50 hover:border-blue-200 transition-all"
+                            >
+                              <MenuIcon size={18} className="mr-3 text-gray-600" />
+                              <span className="font-medium text-gray-900">{menu.nom}</span>
+                              {hasValidUrl ? (
+                                <ExternalLink size={12} className="ml-auto text-gray-400" />
+                              ) : (
+                                <Construction size={12} className="ml-auto text-orange-400" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Aucun menu */}
+                  {(!portailData.groupMenu || portailData.groupMenu.length === 0) && 
+                   (!portailData.menus || portailData.menus.length === 0) && (
+                    <div className="text-center py-8">
+                      <Eye size={48} className="text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Aucun menu configuré pour ce portail</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

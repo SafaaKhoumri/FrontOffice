@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.pfe.backend.views.menu_portail_view;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
