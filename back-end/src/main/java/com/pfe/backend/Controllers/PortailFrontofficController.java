@@ -2,10 +2,14 @@ package com.pfe.backend.Controllers;
 
 import com.pfe.backend.Entities.*;
 import com.pfe.backend.Repositories.*;
+import com.pfe.backend.auth.AuthenticationService;
+import org.apache.catalina.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.naming.ldap.HasControls;
+import javax.swing.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +28,12 @@ public class PortailFrontofficController {
 
     @Autowired
     private MenuRepository menuRepo;
+
+    private final AuthenticationService service;
+
+    public PortailFrontofficController(AuthenticationService service) {
+        this.service = service;
+    }
 
     // DTO pour la réponse du portail
     public static class PortailResponse {
@@ -47,20 +57,14 @@ public class PortailFrontofficController {
 
             if (portail.getGroupMenu() != null) {
                 this.groupMenu = portail.getGroupMenu().stream()
-                        .filter(gm -> gm.getActif()) // Seulement les groupes actifs
+                        .filter(gm -> gm.getIsActive()) // Seulement les groupes actifs
                         .map(GroupMenuDTO::new)
                         .collect(Collectors.toList());
             }
         }
 
-        // Getters/Setters
-        public String getCode() {
-            return code;
-        }
 
-        public void setCode(String code) {
-            this.code = code;
-        }
+
 
         public String getNom() {
             return nom;
@@ -120,11 +124,11 @@ public class PortailFrontofficController {
             this.title = groupMenu.getTitle();
             this.icone = groupMenu.getIcone();
             this.description = groupMenu.getDescription();
-            this.actif = groupMenu.getActif();
+            this.actif = groupMenu.getIsActive();
 
             if (groupMenu.getSous_menus() != null) {
                 this.sous_menus = groupMenu.getSous_menus().stream()
-                        .filter(menu -> menu.getActif()) // Seulement les menus actifs
+                        .filter(menu -> menu.getIsActive()) // Seulement les menus actifs
                         .map(abstractMenu -> {
                             if (abstractMenu instanceof Menu) {
                                 return new MenuDTO((Menu) abstractMenu);
@@ -203,10 +207,9 @@ public class PortailFrontofficController {
             this.id = menu.getId();
             this.title = menu.getTitle();
             this.icone = menu.getIcone();
-            this.code = menu.getCode();
             this.url = menu.getUrl();
             this.description = menu.getDescription();
-            this.actif = menu.getActif();
+            this.actif = menu.getIsActive();
         }
 
         // Getters/Setters
@@ -234,7 +237,7 @@ public class PortailFrontofficController {
             this.icone = icone;
         }
 
-        public String getCode() {
+        public String getNom() {
             return code;
         }
 
@@ -273,26 +276,62 @@ public class PortailFrontofficController {
     // ✅ REMPLACEZ LA MÉTHODE getPortailByCode DANS VOTRE
     // PortailFrontofficController
 
-    @GetMapping("/{portailCode}")
-    public ResponseEntity<?> getPortailByCode(
-            @PathVariable String portailCode,
-            @RequestHeader("Authorization") String token) {
-
+    private Map<Object, Object> recursiveSousMenu(Long groupMenuId) {
+        AbstractMenu item;
+        Map<Object, Object> menuMap = new HashMap<>();
         try {
-            System.out.println("🔍 [FRONTOFFICE] Recherche du portail avec code: " + portailCode);
-            System.out.println("🔑 [FRONTOFFICE] Token reçu: " + token);
+            item = groupMenuRepo.findById(groupMenuId).get();
+        }catch (Exception e) {
+            item = menuRepo.findById(groupMenuId).get();
 
-            // Test 1: Vérifier la session
-            Optional<SessionFrontoffice> sessionOpt = sessionRepository.findByTokenAndActif(token, true);
-            if (!sessionOpt.isPresent()) {
-                System.out.println("❌ [FRONTOFFICE] Session non trouvée");
-                return ResponseEntity.status(401).body("Session non trouvée");
+        }
+        if (item instanceof GroupMenu) {
+            GroupMenu groupMenu = (GroupMenu) item;
+
+            menuMap.put("id", item.getId());
+            menuMap.put("nom", item.getTitle());
+            menuMap.put("title", item.getTitle());
+            menuMap.put("icone", item.getIcone());
+            menuMap.put("type", "groupMenu");
+
+            // 🔥 CORRECTION : Récupérer correctement les sous-menus
+            List<Map<Object, Object>> sousMenusList = new ArrayList<>();
+
+            if (!groupMenu.getSous_menus().isEmpty() && groupMenu.getIsActive()) {
+                for (AbstractMenu sousMenu : groupMenu.getSous_menus()) {
+                    if (sousMenu.getIsActive()) {
+                        // 🔥 IMPORTANT : Récupérer le résultat de la récursion
+                        Map<Object, Object> sousMenuMap = recursiveSousMenu(sousMenu.getId());
+                        if (!sousMenuMap.isEmpty()) {
+                            sousMenusList.add(sousMenuMap);
+                        }
+                    }
+                }
             }
 
-            SessionFrontoffice session = sessionOpt.get();
-            UtilisateurFrontoffice user = session.getUtilisateur();
-            System.out.println(
-                    "✅ [FRONTOFFICE] Utilisateur trouvé: " + user.getEmail() + ", Rôle: " + user.getRole().getCode());
+            menuMap.put("sous_menus", sousMenusList);
+            return menuMap;
+
+        } else {
+            // C'est un Menu simple
+            Menu menu = (Menu) item;
+            menuMap.put("id", item.getId());
+            menuMap.put("nom", item.getTitle());
+            menuMap.put("title", item.getTitle());
+            menuMap.put("url", menu.getUrl());
+            menuMap.put("icone", item.getIcone());
+            menuMap.put("type", "menu");
+            return menuMap;
+        }
+    }
+
+
+    @GetMapping("/{portailCode}")
+    public ResponseEntity<?> getPortailByCode(@PathVariable String portailCode) {
+
+        try {
+            UtilisateurFrontoffice user = service.getCurrentUser()
+                    .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
             // Test 2: Chercher le portail par code simple
             Optional<Portail> portailOpt = portailRepository.findByCode(portailCode);
@@ -306,10 +345,10 @@ public class PortailFrontofficController {
 
             // Test 3: Vérifier l'accès
             boolean hasAccess = portail.getRole().stream()
-                    .anyMatch(role -> role.getCode().equals(user.getRole().getCode()));
+                    .anyMatch(role -> role.getNom().equals(user.getRole().getNom()));
 
             if (!hasAccess) {
-                System.out.println("❌ [FRONTOFFICE] Accès refusé pour le rôle: " + user.getRole().getCode());
+                System.out.println("❌ [FRONTOFFICE] Accès refusé pour le rôle: " + user.getRole().getNom());
                 return ResponseEntity.status(403).body("Accès refusé");
             }
 
@@ -325,83 +364,23 @@ public class PortailFrontofficController {
             response.put("actif", portail.getActif() != null ? portail.getActif() : true);
 
             // ⭐ NOUVEAU : Récupérer les groupes avec leurs menus
-            List<Map<String, Object>> groupMenuList = new ArrayList<>();
+            List<Map<Object, Object>> groupMenuList = new ArrayList<>();
 
-            List<GroupMenu> groupes = groupMenuRepo.findAll().stream()
-                    .filter(g -> g.getActif() && g.getParent() == null)
+            List<GroupMenu> groupes = portail.getGroupMenu().stream()
+                    .filter(g -> g.getIsActive() && g.getParent() == null)
                     .collect(Collectors.toList());
 
             for (GroupMenu group : groupes) {
-                boolean groupBelongsToPortail = portail.getGroupMenu().stream()
-                        .anyMatch(pg -> pg.getId().equals(group.getId()));
 
-                if (groupBelongsToPortail) {
-                    Map<String, Object> groupMap = new HashMap<>();
-                    groupMap.put("id", group.getId());
-                    groupMap.put("nom", group.getTitle());
-                    groupMap.put("title", group.getTitle());
-                    groupMap.put("icone", group.getIcone());
-                    groupMap.put("actif", group.getActif());
+                Map<Object, Object> groupMap = recursiveSousMenu(group.getId());
 
-                    List<Menu> menusInGroup = menuRepo.findByGroupeMenuId(group.getId());
-
-                    List<Map<String, Object>> menusList = new ArrayList<>();
-                    for (Menu menu : menusInGroup) {
-                        if (menu.getActif()) {
-                            Map<String, Object> menuMap = new HashMap<>();
-                            menuMap.put("id", menu.getId());
-                            menuMap.put("nom", menu.getTitle());
-                            menuMap.put("title", menu.getTitle());
-                            menuMap.put("code", menu.getCode());
-                            menuMap.put("url", menu.getUrl());
-                            menuMap.put("icone", menu.getIcone());
-                            menuMap.put("actif", menu.getActif());
-                            menusList.add(menuMap);
-                        }
-                    }
-
-                    groupMap.put("menus", menusList);
-                    groupMenuList.add(groupMap);
-
-                    System.out.println("✅ Groupe " + group.getTitle() + " : " + menusList.size() + " menus chargés");
-                }
+                groupMenuList.add(groupMap);
             }
+
 
             response.put("groupMenu", groupMenuList);
 
-            // ⭐ NOUVEAU : Récupérer les MENUS DIRECTS (sans groupe parent)
-            List<Map<String, Object>> menusDirectsList = new ArrayList<>();
 
-            // Récupérer tous les menus sans groupe parent pour ce rôle
-            List<Menu> menusDirects = menuRepo.findAll().stream()
-                    .filter(menu -> menu.getActif() &&
-                            menu.getGroupeMenu() == null && // Pas de groupe parent
-                            menu.getRole().stream().anyMatch(role -> role.getCode().equals(user.getRole().getCode())) && // Rôle
-                                                                                                                         // correct
-                            menu.getPortails().stream().anyMatch(p -> p.getCode().equals(portailCode))) // Portail
-                                                                                                        // correct
-                    .sorted((m1, m2) -> Integer.compare(m1.getMenuOrder() != null ? m1.getMenuOrder() : 999,
-                            m2.getMenuOrder() != null ? m2.getMenuOrder() : 999)) // Tri par ordre
-                    .collect(Collectors.toList());
-
-            for (Menu menu : menusDirects) {
-                Map<String, Object> menuMap = new HashMap<>();
-                menuMap.put("id", menu.getId());
-                menuMap.put("nom", menu.getTitle());
-                menuMap.put("title", menu.getTitle());
-                menuMap.put("code", menu.getCode());
-                menuMap.put("url", menu.getUrl());
-                menuMap.put("icone", menu.getIcone());
-                menuMap.put("actif", menu.getActif());
-                menuMap.put("order", menu.getMenuOrder());
-                menusDirectsList.add(menuMap);
-            }
-
-            response.put("menus", menusDirectsList); // ⭐ NOUVEAU CHAMP
-            response.put("success", true);
-
-            System.out.println("✅ [FRONTOFFICE] Réponse construite avec " + groupMenuList.size() + " groupes et "
-                    + menusDirectsList.size() + " menus directs");
 
             return ResponseEntity.ok(response);
 
@@ -428,8 +407,8 @@ public class PortailFrontofficController {
             UtilisateurFrontoffice user = session.getUtilisateur();
 
             // Récupérer tous les portails accessibles par le rôle de l'utilisateur
-            List<Portail> portails = portailRepository.findByRole_CodeAndActif(
-                    user.getRole().getCode(), true);
+            List<Portail> portails = portailRepository.findByNomRoleAndActif(
+                    user.getRole().getNom(), true);
 
             List<PortailResponse> response = portails.stream()
                     .map(PortailResponse::new)
@@ -443,7 +422,7 @@ public class PortailFrontofficController {
         }
     }
 
-    @GetMapping("/fix-menu-links")
+   /* @GetMapping("/fix-menu-links")
     public ResponseEntity<String> fixMenuLinks() {
         try {
             // Récupérer les groupes
@@ -470,5 +449,5 @@ public class PortailFrontofficController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
         }
-    }
+    }*/
 }

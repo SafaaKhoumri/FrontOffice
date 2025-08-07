@@ -1,12 +1,22 @@
 package com.pfe.backend.Entities;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 import jakarta.persistence.*;
-
+import jdk.jshell.ImportSnippet;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+@Builder
 @Entity
 @Table(name = "utilisateur_frontoffice")
-public class UtilisateurFrontoffice {
+@AllArgsConstructor
+@NoArgsConstructor
+public class UtilisateurFrontoffice implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,16 +34,14 @@ public class UtilisateurFrontoffice {
 
     // ⭐ RELATION CRITIQUE avec Role
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id", nullable = false)
+    @JoinColumn(name = "role_id")
     private Role role; // TRANSITAIRE, IMPORTATEUR, etc.
 
     private Boolean actif = true;
     private LocalDateTime dateCreation = LocalDateTime.now();
     private LocalDateTime derniereConnexion;
 
-    // Constructeurs, getters, setters...
-    public UtilisateurFrontoffice() {
-    }
+
 
     // Getters/Setters
     public Long getId() {
@@ -60,8 +68,38 @@ public class UtilisateurFrontoffice {
         this.role = role;
     }
 
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserDetails.super.isEnabled();
     }
 
     public void setPassword(String password) {
@@ -124,12 +162,5 @@ public class UtilisateurFrontoffice {
         this.derniereConnexion = derniereConnexion;
     }
 
-    // Constructeur personnalisé
-    public UtilisateurFrontoffice(String email, String password, Role role) {
-        this.email = email;
-        this.password = password;
-        this.role = role;
-        this.dateCreation = LocalDateTime.now();
-    }
 
 }

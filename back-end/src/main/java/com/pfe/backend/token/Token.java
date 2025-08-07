@@ -1,6 +1,6 @@
 package com.pfe.backend.token;
 
-import com.pfe.backend.user.User;
+import com.pfe.backend.Entities.UtilisateurFrontoffice;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -38,5 +38,5 @@ public class Token {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
-  public User user;
+  public UtilisateurFrontoffice user;
 }

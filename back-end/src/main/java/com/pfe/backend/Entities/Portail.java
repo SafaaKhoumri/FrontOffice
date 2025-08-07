@@ -1,12 +1,10 @@
 package com.pfe.backend.Entities;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.pfe.backend.user.User;
 import com.pfe.backend.views.menu_portail_view;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import org.hibernate.annotations.Fetch;
 
 import java.time.LocalDateTime;
@@ -17,6 +15,9 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@Getter
+@Setter
 
 public class Portail {
 
@@ -36,7 +37,7 @@ public class Portail {
 
     @ManyToOne
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.PortailView.class })
-    private User utilisateur;
+    private UtilisateurFrontoffice utilisateur;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.PortailView.class })
@@ -64,6 +65,29 @@ public class Portail {
     private String description;
     private String logo;
     private String couleurTheme;
+
+    @NotNull
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = false;
+
+    @Column(name = "is_valid")
+    private Short isValid;
+
+    public Short getIsValid() {
+        return isValid;
+    }
+
+    public void setIsValid(Short isValid) {
+        this.isValid = isValid;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
 
     // Getters/Setters
     public String getCode() {
@@ -126,7 +150,7 @@ public class Portail {
         this.date_creation = date_creation;
     }
 
-    public void setUtilisateur(User utilisateur) {
+    public void setUtilisateur(UtilisateurFrontoffice utilisateur) {
         this.utilisateur = utilisateur;
     }
 
@@ -150,7 +174,7 @@ public class Portail {
         return date_creation;
     }
 
-    public User getUtilisateur() {
+    public UtilisateurFrontoffice getUtilisateur() {
         return utilisateur;
     }
 

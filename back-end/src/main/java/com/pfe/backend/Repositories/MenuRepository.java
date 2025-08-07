@@ -11,11 +11,9 @@ public interface MenuRepository extends JpaRepository<Menu, Long> {
     // ✅ CORRECTION : Utiliser le bon nom de propriété
     List<Menu> findByGroupeMenuId(Long groupeMenuId); // ✅ CORRECT (groupeMenu)
 
-    // ⭐ AJOUT NÉCESSAIRE pour le DataLoader
-    Optional<Menu> findByCode(String code);
+
 
     // Méthodes existantes
     Menu findByMenuOrder(int order);
 
-    List<Menu> findByActifTrue();
 }

@@ -1,12 +1,11 @@
 package com.pfe.backend.auth;
 
+import com.pfe.backend.Entities.UtilisateurFrontoffice;
+import com.pfe.backend.Repositories.UtilisateurFrontofficRepositiry;
 import com.pfe.backend.config.JwtService;
 import com.pfe.backend.token.Token;
 import com.pfe.backend.token.TokenRepository;
 import com.pfe.backend.token.TokenType;
-import com.pfe.backend.user.Role;
-import com.pfe.backend.user.User;
-import com.pfe.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,18 +20,17 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
-  private final UserRepository repository;
   private final TokenRepository tokenRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final AuthenticationManager authenticationManager;
   @Autowired
-  UserRepository userRepository;
+  UtilisateurFrontofficRepositiry userRepository;
 
-  public AuthenticationResponse register(RegisterRequest request) {
-    var user = User.builder()
-        .fullname(request.getFullname())
-        .matricule(request.getMatricule())
+  /*public AuthenticationResponse register(RegisterRequest request) {
+    var user = UtilisateurFrontoffice.builder()
+            .nom(request.getFullname())
+            .entreprise(request.)
         .cin(request.getCin())
         .email(request.getEmail())
         .password(passwordEncoder.encode(request.getPassword()))
@@ -44,14 +42,14 @@ public class AuthenticationService {
     return AuthenticationResponse.builder()
         .accessToken(jwtToken)
         .build();
-  }
+  }*/
 
   public AuthenticationResponse authenticate(AuthenticationRequest request) {
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(
             request.getEmail(),
             request.getPassword()));
-    var user = repository.findByEmail(request.getEmail())
+    var user = userRepository.findByEmail(request.getEmail())
         .orElseThrow();
     var jwtToken = jwtService.generateToken(user);
     revokeAllUserTokens(user);
@@ -61,7 +59,7 @@ public class AuthenticationService {
         .build();
   }
 
-  private void saveUserToken(User user, String jwtToken) {
+  private void saveUserToken(UtilisateurFrontoffice user, String jwtToken) {
     var token = Token.builder()
         .user(user)
         .token(jwtToken)
@@ -72,8 +70,8 @@ public class AuthenticationService {
     tokenRepository.save(token);
   }
 
-  private void revokeAllUserTokens(User user) {
-    var validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
+  private void revokeAllUserTokens(UtilisateurFrontoffice user) {
+    var validUserTokens = tokenRepository.findAllValidTokenByUser(Integer.valueOf(String.valueOf(user.getId())));
     if (validUserTokens.isEmpty())
       return;
     validUserTokens.forEach(token -> {
@@ -83,7 +81,7 @@ public class AuthenticationService {
     tokenRepository.saveAll(validUserTokens);
   }
 
-  public Optional<User> getCurrentUser() {
+  public Optional<UtilisateurFrontoffice> getCurrentUser() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return userRepository.findByEmail(authentication.getName());
   }

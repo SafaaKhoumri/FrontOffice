@@ -32,9 +32,5 @@ public interface UtilisateurFrontofficRepositiry extends JpaRepository<Utilisate
     @Query("SELECT u FROM UtilisateurFrontoffice u WHERE u.actif = true")
     java.util.List<UtilisateurFrontoffice> findAllActive();
 
-    /**
-     * Trouver des utilisateurs par rôle
-     */
-    @Query("SELECT u FROM UtilisateurFrontoffice u WHERE u.role.code = :roleCode AND u.actif = true")
-    java.util.List<UtilisateurFrontoffice> findByRoleCodeAndActif(@Param("roleCode") String roleCode);
+
 }

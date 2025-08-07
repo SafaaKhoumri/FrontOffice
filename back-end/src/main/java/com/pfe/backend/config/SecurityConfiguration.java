@@ -1,6 +1,6 @@
 package com.pfe.backend.config;
 
-import com.pfe.backend.user.Role;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +19,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-import static com.pfe.backend.user.Role.ADMIN;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @Configuration
@@ -38,13 +37,10 @@ public class SecurityConfiguration {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
-                        // === BACKOFFICE - Vos règles existantes ===
-                        .requestMatchers("/aut/register").hasRole(Role.ADMIN.name())
-                        .requestMatchers("/aut/authenticate").permitAll()
 
                         // === FRONTOFFICE - TOUS les endpoints sont publics ===
                         // ⭐ SOLUTION : Permettre TOUS les endpoints frontoffice
-                        .requestMatchers("/api/frontoffice/**").permitAll()
+                        .requestMatchers("/api/frontoffice/auth/login").permitAll()
 
                         // Toutes les autres requêtes (backoffice) nécessitent une authentification
                         .anyRequest().authenticated())

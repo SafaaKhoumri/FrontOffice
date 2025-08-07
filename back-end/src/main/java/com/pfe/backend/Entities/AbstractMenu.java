@@ -3,9 +3,9 @@ package com.pfe.backend.Entities;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.pfe.backend.user.User;
 import com.pfe.backend.views.menu_portail_view;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
@@ -20,31 +20,20 @@ public abstract class AbstractMenu {
             menu_portail_view.PortailView.class, menu_portail_view.getAllGroupMenu_to_frontend.class })
     private Long id;
 
-    // ⭐ OBLIGATOIRE pour identifier les menus
-    @Column(unique = true, nullable = false)
-    private String code; // Ex: "MENU_DECL", "MENU_SUIVI"
 
-    // ⭐ OBLIGATOIRE pour activer/désactiver
-    private Boolean actif = true;
 
     // ⭐ Utile pour l'interface
     private String icone; // Icon CSS class ou URL
+    @NotNull
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = false;
 
-    // Getters/Setters
-    public String getCode() {
-        return code;
+    public Boolean getIsActive() {
+        return isActive;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public Boolean getActif() {
-        return actif;
-    }
-
-    public void setActif(Boolean actif) {
-        this.actif = actif;
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 
     public String getIcone() {
@@ -58,7 +47,7 @@ public abstract class AbstractMenu {
     @ManyToOne
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.MenuWithoutGroupMenu.class,
             menu_portail_view.getAllGroupMenu_to_frontend.class })
-    private User creePar;
+    private UtilisateurFrontoffice creePar;
 
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.MenuWithoutGroupMenu.class,
             menu_portail_view.getAllGroupMenu_to_frontend.class })
@@ -72,7 +61,7 @@ public abstract class AbstractMenu {
         return id;
     }
 
-    public User getCreePar() {
+    public UtilisateurFrontoffice getCreePar() {
         return creePar;
     }
 
@@ -84,7 +73,7 @@ public abstract class AbstractMenu {
         this.id = id;
     }
 
-    public void setCreePar(User cree_par) {
+    public void setCreePar(UtilisateurFrontoffice cree_par) {
         this.creePar = cree_par;
     }
 

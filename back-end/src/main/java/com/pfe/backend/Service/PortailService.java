@@ -89,7 +89,7 @@ public class PortailService {
 
                 // Log les nouveaux rôles
                 for (Role role : portailDetails.getRole()) {
-                    logger.info("Nouveau rôle ajouté: ID={}, Nom={}", role.getId(), role.getNom_Role());
+                    logger.info("Nouveau rôle ajouté: ID={}, Nom={}", role.getId(), role.getNom());
                 }
             }
 

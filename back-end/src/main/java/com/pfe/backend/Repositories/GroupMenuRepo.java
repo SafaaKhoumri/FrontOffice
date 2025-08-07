@@ -11,13 +11,5 @@ public interface GroupMenuRepo extends JpaRepository<GroupMenu, Long> {
 
     List<GroupMenu> findByParentId(Long id);
 
-    // ⭐ AJOUTEZ CETTE MÉTHODE
-    Optional<GroupMenu> findByCode(String code);
-
-    List<GroupMenu> findByActifTrue();
-
-    List<GroupMenu> findByParentIsNull();
-
-    List<GroupMenu> findByParentIsNullAndActifTrue();
 
 }

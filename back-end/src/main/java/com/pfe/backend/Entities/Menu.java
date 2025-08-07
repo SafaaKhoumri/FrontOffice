@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.pfe.backend.views.menu_portail_view;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
@@ -18,6 +19,8 @@ import java.util.List;
 // generator = ObjectIdGenerators.PropertyGenerator.class,
 // property = "id")
 public class Menu extends AbstractMenu {
+
+
 
     public Menu() {
         this.role = new ArrayList<>();
@@ -41,6 +44,10 @@ public class Menu extends AbstractMenu {
     @ManyToMany
     private List<Portail> portails;
     private String description;
+
+
+
+
 
     public String getDescription() {
         return description;

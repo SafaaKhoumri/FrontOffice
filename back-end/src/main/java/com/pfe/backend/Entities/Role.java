@@ -1,60 +1,26 @@
 package com.pfe.backend.Entities;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.pfe.backend.views.menu_portail_view;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+@Getter
+@Setter
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-
+@Table(name = "role")
 public class Role {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonView(menu_portail_view.PortailView.class)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "role_id_gen")
+    @Column(name = "id", nullable = false)
     private Long id;
-    @JsonView(menu_portail_view.PortailView.class)
-    private String nom_role;
-    // ⭐ OBLIGATOIRE pour identifier le type de rôle
-    @Column(unique = true, nullable = false)
-    private String code; // Ex: "TRANSITAIRE", "IMPORTATEUR"
 
-    // ⭐ OBLIGATOIRE pour activer/désactiver
-    private Boolean actif = true;
+    @Size(max = 255)
+    @Column(name = "nom")
+    private String nom;
 
-    private String description;
+    @Column(name = "actif")
+    private Boolean actif;
 
-    // Getters/Setters
-    public String getCode() {
-        return code;
-    }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setNom_Role(String nom_role) {
-        this.nom_role = nom_role;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getNom_Role() {
-        return nom_role;
-    }
 }

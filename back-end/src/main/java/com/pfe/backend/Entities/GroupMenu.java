@@ -3,6 +3,7 @@ package com.pfe.backend.Entities;
 import com.fasterxml.jackson.annotation.*;
 import com.pfe.backend.views.menu_portail_view;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
@@ -37,6 +38,10 @@ public class GroupMenu extends AbstractMenu {
     private List<AbstractMenu> sous_menus = new ArrayList<>();
 
     private String description;
+
+
+
+
 
     public String getDescription() {
         return description;

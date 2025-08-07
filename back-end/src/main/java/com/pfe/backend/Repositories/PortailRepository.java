@@ -2,6 +2,7 @@ package com.pfe.backend.Repositories;
 
 import com.pfe.backend.Entities.Menu;
 import com.pfe.backend.Entities.Portail;
+import com.pfe.backend.Entities.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,8 @@ public interface PortailRepository extends JpaRepository<Portail, Long> {
      * Rechercher des portails par nom (insensible à la casse)
      */
     List<Portail> findByNomContainingIgnoreCase(String nom);
+
+    List<Portail> findByRole(List<Role> role);
 
     /**
      * Rechercher des portails par utilisateur
@@ -65,8 +68,8 @@ public interface PortailRepository extends JpaRepository<Portail, Long> {
     /**
      * Rechercher des portails avec des rôles spécifiques
      */
-    @Query("SELECT DISTINCT p FROM Portail p JOIN p.role r WHERE r.id IN :roleIds")
-    List<Portail> findByRoleIds(@Param("roleIds") List<Long> roleIds);
+    @Query("SELECT DISTINCT p FROM Portail p JOIN p.role r WHERE r.id = :roleId")
+    List<Portail> findByRoleId(@Param("roleId") Long roleId);
 
     /**
      * Rechercher des portails avec un nombre minimum de rôles
@@ -125,21 +128,9 @@ public interface PortailRepository extends JpaRepository<Portail, Long> {
      */
     Optional<Portail> findByCodeAndActif(String code, Boolean actif);
 
-    /**
-     * ✅ CORRIGÉ : Trouver un portail par code et rôle de l'utilisateur
-     */
-    @Query("SELECT p FROM Portail p JOIN p.role r WHERE p.code = :code AND r.code = :roleCode AND p.actif = :actif")
-    Optional<Portail> findByCodeAndRole_CodeAndActif(
-            @Param("code") String code,
-            @Param("roleCode") String roleCode,
-            @Param("actif") Boolean actif);
 
-    /**
-     * ✅ CORRIGÉ : Trouver tous les portails accessibles par un rôle (retourne une
-     * List)
-     */
-    @Query("SELECT p FROM Portail p JOIN p.role r WHERE r.code = :roleCode AND p.actif = :actif")
-    List<Portail> findByRole_CodeAndActif(
-            @Param("roleCode") String roleCode,
+    @Query("SELECT p FROM Portail p JOIN p.role r WHERE r.nom = :nomRole AND p.actif = :actif")
+    List<Portail> findByNomRoleAndActif(
+            @Param("nomRole") String roleCode,
             @Param("actif") Boolean actif);
 }

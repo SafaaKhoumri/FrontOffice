@@ -1,7 +1,8 @@
 package com.pfe.backend.config;
 
+import com.pfe.backend.Entities.UtilisateurFrontoffice;
+import com.pfe.backend.Repositories.UtilisateurFrontofficRepositiry;
 import com.pfe.backend.auditing.ApplicationAuditAware;
-import com.pfe.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,12 +20,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class ApplicationConfig {
 
-  private final UserRepository repository;
+  private final UtilisateurFrontofficRepositiry repository;
 
   @Bean
   public UserDetailsService userDetailsService() {
-    return username -> repository.findByEmail(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    return username -> {
+      System.out.println("=== UserDetailsService Debug ===");
+      System.out.println("Username reçu: '" + username + "'");
+      System.out.println("Type: " + username.getClass().getSimpleName());
+      System.out.println("Longueur: " + username.length());
+      System.out.println("Est vide: " + username.isEmpty());
+      System.out.println("Est null: " + (username == null));
+
+      return repository.findByEmail(username)
+              .orElseThrow(() -> {
+                System.out.println("❌ Utilisateur non trouvé pour: '" + username + "'");
+                return new UsernameNotFoundException("User not found");
+              });
+    };
   }
 
   @Bean

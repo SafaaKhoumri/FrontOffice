@@ -1,6 +1,6 @@
 package com.pfe.backend.config;
 
-import com.pfe.backend.user.User;
+import com.pfe.backend.Entities.UtilisateurFrontoffice;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -58,8 +58,8 @@ public class JwtService {
         .map(authority -> authority.getAuthority())
         .collect(Collectors.toList()));
 
-    if (userDetails instanceof User) {
-      claims.put("full_name", ((User) userDetails).getFullname());
+    if (userDetails instanceof UtilisateurFrontoffice) {
+      claims.put("full_name", ((UtilisateurFrontoffice) userDetails).getNom());
 
     }
     return Jwts
