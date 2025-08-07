@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, LogIn, Sparkles, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import config from '../Config';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -20,10 +21,8 @@ const LoginPage = () => {
 
   // Configuration axios
   const apiClient = axios.create({
-    baseURL: 'http://localhost:8085/api/frontoffice',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    baseURL: 'http://localhost:8087/api/frontoffice',
+    withCredentials: true
   });
 
   useEffect(() => {
@@ -44,7 +43,9 @@ const LoginPage = () => {
     }));
     setParticles(newParticles);
   }, []);
-
+  useEffect(() => {
+    console.log(" config :",config.baseURL);
+  }, []);
   const verifyTokenAndRedirect = async (token) => {
     try {
       const response = await apiClient.get('/auth/verify', {
@@ -99,29 +100,31 @@ const LoginPage = () => {
         return;
       }
 
-      console.log('Tentative de connexion pour:', formData.email);
+      console.log('Tentative de connexion pour:', formData.email , formData.password);
 
       // Appel API de connexion
-      const response = await apiClient.post('/auth/login', {
+      const response = await axios.post('http://localhost:8087/api/frontoffice/auth/login', {
         email: formData.email,
         password: formData.password
-      });
-
-      console.log('Réponse du serveur:', response.data);
-
-      if (response.data.success) {
-        // Stocker le token et les infos utilisateur
-        localStorage.setItem('frontoffice_token', response.data.token);
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true 
+      },
+    ).then(response =>{
+      console.log('Réponse du serveur:', response.data)
+      localStorage.setItem('frontoffice_token', response.data.token);
         localStorage.setItem('user_info', JSON.stringify(response.data.user));
         localStorage.setItem('portail_code', response.data.portailCode);
-
-        console.log('Connexion réussie, redirection vers:', response.data.redirectUrl);
-        
-        // Rediriger vers le portail approprié
+         // Rediriger vers le portail approprié
         navigate(response.data.redirectUrl);
-      } else {
-        setError(response.data.message || 'Erreur de connexion');
-      }
+    } );
+
+      
+
+     
 
     } catch (error) {
       console.error('Erreur de connexion:', error);

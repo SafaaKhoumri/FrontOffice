@@ -28,10 +28,13 @@ import {
   AlertCircle,
   Construction
 } from 'lucide-react';
+import { useAxiosInstance } from '../hook/useAxiosInstance';
 
 const Dashboard = () => {
   // Récupération du code portail depuis l'URL
   const portailCode = window.location.pathname.split('/').pop() || 'IMP_001';
+
+  const axiosInstance = useAxiosInstance();
   
   // États pour l'interface
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -67,23 +70,12 @@ const Dashboard = () => {
 
       console.log('🔄 Chargement des données du portail:', portailCode);
 
-      const response = await fetch(`http://localhost:8085/api/frontoffice/portail/${portailCode}`, {
-        headers: {
-          'Authorization': token,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await axiosInstance.get(`/api/frontoffice/portail/${portailCode}`).then(res => {
+        console.log('📥 Données du portail récupérées:', res.data);
+        setPortailData(res.data);})
+;
 
-      console.log('📡 Status API:', response.status);
-
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('📊 Données du portail reçues:', data);
       
-      setPortailData(data);
       
       // Récupérer les données utilisateur
       const userInfo = localStorage.getItem('user_info');
