@@ -213,7 +213,7 @@ public class AuthFrontofficController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(HttpServletRequest request1,
-                                               @RequestBody AuthenticationRequest request,
+                                               @RequestBody Map<Object,Object> request,
                                                HttpServletResponse response) {
         String origin = request1.getHeader("Origin");
         String xForwardedProto = request1.getHeader("X-Forwarded-Proto");
@@ -256,9 +256,14 @@ public class AuthFrontofficController {
         System.out.println("Is Localhost: " + isLocalhost);
         System.out.println("============================");
 
-        UtilisateurFrontoffice user = userRepository.findByEmail(request.getEmail()).get();
+        UtilisateurFrontoffice user = userRepository.findByEmail(String.valueOf(request.get("email"))).get();
         System.out.println("User found: " + user.getRole().getNom());
         List<Portail> portail = portailRepository.findByRoleId(user.getRole().getId());
+
+        Portail p=portailRepository.findByCode(String.valueOf(request.get("code"))).get();
+        if(!p.getRole().contains(user.getRole())){
+            return ResponseEntity.notFound().build();
+        }
 
         Map<Object,Object> data = new HashMap<>();
         data.put("access_token", authResponse.getAccessToken());
