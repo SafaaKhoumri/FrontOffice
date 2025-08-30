@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -44,12 +45,12 @@ public class AuthenticationService {
         .build();
   }*/
 
-  public AuthenticationResponse authenticate(AuthenticationRequest request) {
+  public AuthenticationResponse authenticate(Map<Object,Object> request) {
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(
-            request.getEmail(),
-            request.getPassword()));
-    var user = userRepository.findByEmail(request.getEmail())
+            String.valueOf(request.get("email")),
+            String.valueOf(request.get("password"))) );
+    var user = userRepository.findByEmail(String.valueOf(request.get("email")))
         .orElseThrow();
     var jwtToken = jwtService.generateToken(user);
     revokeAllUserTokens(user);
