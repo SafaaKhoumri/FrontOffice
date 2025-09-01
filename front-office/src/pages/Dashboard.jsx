@@ -150,39 +150,43 @@ const Dashboard = () => {
     return false;
   };
 
-  // ⭐ FONCTION MODIFIÉE POUR GÉRER L'AFFICHAGE DE L'IFRAME ET MESSAGES
-  const handleMenuClick = (menuItem) => {
-    setActiveMenu(menuItem.id || menuItem.code);
-    setCurrentMenuData(menuItem);
-    
-    if (menuItem.menus && menuItem.menus.length > 0) {
-      // Si c'est un groupe de menus, toggle l'expansion
-      toggleMenu(menuItem.id || menuItem.code);
-      return;
-    }
-    
-    const menuTitle = menuItem.title || menuItem.nom;
-    const menuUrl = menuItem.url;
-    
-    // Vérifier si l'URL est vide ou non implémentée
-    if (isEmptyOrNotImplemented(menuUrl)) {
-      console.log('⚠️ URL vide ou non implémentée pour le menu:', menuTitle);
-      setCurrentMenuTitle(menuTitle);
-      setCurrentUrl(menuUrl);
-      setShowEmptyUrlMessage(true);
-      setShowIframe(false);
-    } else {
-      // URL valide, afficher dans l'iframe
-      console.log('🌐 Navigation vers URL:', menuUrl, 'pour le menu:', menuTitle);
-      setCurrentUrl(menuUrl);
-      setCurrentMenuTitle(menuTitle);
-      setShowIframe(true);
-      setShowEmptyUrlMessage(false);
-      setIframeLoading(true);
-    }
-    
-    console.log('📍 Menu cliqué:', menuItem);
-  };
+// 1. Modifier la fonction handleMenuClick pour gérer la nouvelle structure
+const handleMenuClick = (menuItem) => {
+  setActiveMenu(menuItem.id || menuItem.code);
+  setCurrentMenuData(menuItem);
+  
+  // 🔥 CORRECTION : Vérifier les sous_menus ET menus
+  const hasSubMenus = (menuItem.sous_menus && menuItem.sous_menus.length > 0) || 
+                     (menuItem.menus && menuItem.menus.length > 0);
+  
+  if (hasSubMenus) {
+    // Si c'est un groupe de menus, toggle l'expansion
+    toggleMenu(menuItem.id || menuItem.code);
+    return;
+  }
+  
+  const menuTitle = menuItem.title || menuItem.nom;
+  const menuUrl = menuItem.url;
+  
+  // Vérifier si l'URL est vide ou non implémentée
+  if (isEmptyOrNotImplemented(menuUrl)) {
+    console.log('⚠️ URL vide ou non implémentée pour le menu:', menuTitle);
+    setCurrentMenuTitle(menuTitle);
+    setCurrentUrl(menuUrl);
+    setShowEmptyUrlMessage(true);
+    setShowIframe(false);
+  } else {
+    // URL valide, afficher dans l'iframe
+    console.log('🌐 Navigation vers URL:', menuUrl, 'pour le menu:', menuTitle);
+    setCurrentUrl(menuUrl);
+    setCurrentMenuTitle(menuTitle);
+    setShowIframe(true);
+    setShowEmptyUrlMessage(false);
+    setIframeLoading(true);
+  }
+  
+  console.log('📍 Menu cliqué:', menuItem);
+};
 
   // ⭐ FONCTION POUR RETOURNER AU DASHBOARD
   const handleBackToDashboard = () => {
@@ -299,61 +303,124 @@ const Dashboard = () => {
             {sidebarOpen && <span className="ml-3 font-medium">Tableau de bord</span>}
           </button>
 
-          {/* Groupes de menus RÉELS */}
-          {portailData.groupMenu && portailData.groupMenu.map((group) => {
-            const isExpanded = expandedMenus[group.id];
-            const hasMenus = group.menus && group.menus.length > 0;
+          {/* Groupes de menus RÉELS - STRUCTURE CORRIGÉE */}
+{portailData.groupMenu && portailData.groupMenu.map((group) => {
+  const isExpanded = expandedMenus[group.id];
+  
+  // 🔥 CORRECTION : Gérer sous_menus de l'API
+  const subMenus = group.sous_menus || group.menus || [];
+  const hasMenus = subMenus && subMenus.length > 0;
 
-            return (
-              <div key={group.id} className="mb-1">
+  return (
+    <div key={group.id} className="mb-1">
+      <button
+        onClick={() => handleMenuClick(group)}
+        className="w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100"
+      >
+        <Package size={20} />
+        {sidebarOpen && (
+          <>
+            <span className="ml-3 font-medium">{group.nom || group.title}</span>
+            {hasMenus && (
+              <div className="ml-auto">
+                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </div>
+            )}
+          </>
+        )}
+      </button>
+
+      {/* 🔥 FONCTION RÉCURSIVE pour afficher les sous-menus */}
+      {hasMenus && isExpanded && sidebarOpen && (
+        <div className="ml-6 mt-1 space-y-1">
+          {subMenus.map((menu) => {
+            // Gérer les menus et groupes imbriqués
+            if (menu.type === 'groupMenu') {
+              // C'est un sous-groupe
+              const isSubExpanded = expandedMenus[menu.id];
+              const subSubMenus = menu.sous_menus || [];
+              
+              return (
+                <div key={menu.id}>
+                  <button
+                    onClick={() => handleMenuClick(menu)}
+                    className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                      activeMenu === menu.id
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Package size={16} />
+                    <span className="ml-3 font-medium">{menu.nom || menu.title}</span>
+                    {subSubMenus.length > 0 && (
+                      <div className="ml-auto">
+                        {isSubExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </div>
+                    )}
+                  </button>
+                  
+                  {/* Menus du sous-groupe */}
+                  {subSubMenus.length > 0 && isSubExpanded && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {subSubMenus.map((subMenu) => {
+                        const MenuIcon = getMenuIcon(subMenu.code);
+                        const hasValidUrl = !isEmptyOrNotImplemented(subMenu.url);
+                        
+                        return (
+                          <button
+                            key={subMenu.id}
+                            onClick={() => handleMenuClick(subMenu)}
+                            className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-xs transition-colors ${
+                              activeMenu === subMenu.id
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <MenuIcon size={14} />
+                            <span className="ml-3">{subMenu.nom || subMenu.title}</span>
+                            {hasValidUrl ? (
+                              <ExternalLink size={10} className="ml-auto text-gray-400" />
+                            ) : (
+                              <Construction size={10} className="ml-auto text-orange-400" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            } else {
+              // C'est un menu simple
+              const MenuIcon = getMenuIcon(menu.code);
+              const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+              
+              return (
                 <button
-                  onClick={() => toggleMenu(group.id)}
-                  className="w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100"
+                  key={menu.id}
+                  onClick={() => handleMenuClick(menu)}
+                  className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                    activeMenu === menu.id
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                 >
-                  <Package size={20} />
-                  {sidebarOpen && (
-                    <>
-                      <span className="ml-3 font-medium">{group.nom}</span>
-                      {hasMenus && (
-                        <div className="ml-auto">
-                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        </div>
-                      )}
-                    </>
+                  <MenuIcon size={16} />
+                  <span className="ml-3">{menu.nom || menu.title}</span>
+                  {hasValidUrl ? (
+                    <ExternalLink size={12} className="ml-auto text-gray-400" />
+                  ) : (
+                    <Construction size={12} className="ml-auto text-orange-400" />
                   )}
                 </button>
-
-                {hasMenus && isExpanded && sidebarOpen && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {group.menus.map((menu) => {
-                      const MenuIcon = getMenuIcon(menu.code);
-                      const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
-                      
-                      return (
-                        <button
-                          key={menu.id}
-                          onClick={() => handleMenuClick(menu)}
-                          className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-                            activeMenu === menu.id
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <MenuIcon size={16} />
-                          <span className="ml-3">{menu.nom}</span>
-                          {hasValidUrl ? (
-                            <ExternalLink size={12} className="ml-auto text-gray-400" />
-                          ) : (
-                            <Construction size={12} className="ml-auto text-orange-400" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
+              );
+            }
           })}
+        </div>
+      )}
+    </div>
+  );
+})}
 
           {/* Menus directs RÉELS */}
           {portailData.menus && portailData.menus.map((menu) => {
@@ -676,49 +743,97 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="p-6">
-                  {/* Groupes de menus */}
-                  {portailData.groupMenu && portailData.groupMenu.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="text-md font-medium text-gray-900 mb-3">Groupes de menus</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {portailData.groupMenu.map((group) => (
-                          <div key={group.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">{group.nom}</h5>
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                {group.menus?.length || 0} menus
-                              </span>
-                            </div>
-                            {group.menus && group.menus.length > 0 && (
-                              <div className="space-y-1">
-                                {group.menus.map((menu) => {
-                                  const MenuIcon = getMenuIcon(menu.code);
-                                  const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
-                                  return (
-                                    <button
-                                      key={menu.id}
-                                      onClick={() => handleMenuClick(menu)}
-                                      className="w-full flex items-center text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
-                                    >
-                                      <MenuIcon size={14} className="mr-2" />
-                                      {menu.nom}
-                                      {hasValidUrl ? (
-                                        <ExternalLink size={12} className="ml-auto" />
-                                      ) : (
-                                        <Construction size={12} className="ml-auto text-orange-400" />
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                 {/* Groupes de menus dans le dashboard principal */}
+{portailData.groupMenu && portailData.groupMenu.length > 0 && (
+  <div className="mb-6">
+    <h4 className="text-md font-medium text-gray-900 mb-3">Groupes de menus</h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {portailData.groupMenu.map((group) => {
+        // 🔥 CORRECTION : Compter tous les menus récursivement
+        const countAllMenus = (menuGroup) => {
+          const subMenus = menuGroup.sous_menus || [];
+          let count = 0;
+          
+          subMenus.forEach(subMenu => {
+            if (subMenu.type === 'menu') {
+              count++;
+            } else if (subMenu.type === 'groupMenu') {
+              count += countAllMenus(subMenu);
+            }
+          });
+          
+          return count;
+        };
+        
+        const totalMenus = countAllMenus(group);
+        
+        return (
+          <div key={group.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-medium text-gray-900">{group.nom || group.title}</h5>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {totalMenus} menus
+              </span>
+            </div>
+            
+            {/* Affichage récursif des menus */}
+            <div className="space-y-1">
+              {(group.sous_menus || []).map((menu) => {
+                if (menu.type === 'groupMenu') {
+                  return (
+                    <div key={menu.id} className="ml-2">
+                      <div className="text-sm font-medium text-gray-700 mb-1">
+                        📁 {menu.nom || menu.title}
                       </div>
+                      {(menu.sous_menus || []).map((subMenu) => {
+                        const MenuIcon = getMenuIcon(subMenu.code);
+                        const hasValidUrl = !isEmptyOrNotImplemented(subMenu.url);
+                        return (
+                          <button
+                            key={subMenu.id}
+                            onClick={() => handleMenuClick(subMenu)}
+                            className="w-full flex items-center text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors ml-4"
+                          >
+                            <MenuIcon size={14} className="mr-2" />
+                            {subMenu.nom || subMenu.title}
+                            {hasValidUrl ? (
+                              <ExternalLink size={12} className="ml-auto" />
+                            ) : (
+                              <Construction size={12} className="ml-auto text-orange-400" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
-
-                  {/* Menus directs */}
+                  );
+                } else {
+                  const MenuIcon = getMenuIcon(menu.code);
+                  const hasValidUrl = !isEmptyOrNotImplemented(menu.url);
+                  return (
+                    <button
+                      key={menu.id}
+                      onClick={() => handleMenuClick(menu)}
+                      className="w-full flex items-center text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
+                    >
+                      <MenuIcon size={14} className="mr-2" />
+                      {menu.nom || menu.title}
+                      {hasValidUrl ? (
+                        <ExternalLink size={12} className="ml-auto" />
+                      ) : (
+                        <Construction size={12} className="ml-auto text-orange-400" />
+                      )}
+                    </button>
+                  );
+                }
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+              {/* Menus directs */}
                   {portailData.menus && portailData.menus.length > 0 && (
                     <div>
                       <h4 className="text-md font-medium text-gray-900 mb-3">Menus directs</h4>
@@ -760,7 +875,7 @@ const Dashboard = () => {
           )}
         </main>
       </div>
-    </div>
+    </div>    
   );
 };
 

@@ -94,7 +94,7 @@ const LoginPage = () => {
       console.log('Tentative de connexion pour:', formData.email , formData.password);
 
       // Appel API de connexion
-      const response = await axios.post('http://localhost:8087/api/frontoffice/auth/login', {
+       await axios.post('http://localhost:8085/api/frontoffice/auth/login', {
         email: formData.email,
         password: formData.password,
         code: config.codePortail
