@@ -47,7 +47,7 @@ public abstract class AbstractMenu {
     @ManyToOne
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.MenuWithoutGroupMenu.class,
             menu_portail_view.getAllGroupMenu_to_frontend.class })
-    private UtilisateurFrontoffice creePar;
+    private User creePar;
 
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.MenuWithoutGroupMenu.class,
             menu_portail_view.getAllGroupMenu_to_frontend.class })
@@ -61,7 +61,7 @@ public abstract class AbstractMenu {
         return id;
     }
 
-    public UtilisateurFrontoffice getCreePar() {
+    public User getCreePar() {
         return creePar;
     }
 
@@ -73,7 +73,7 @@ public abstract class AbstractMenu {
         this.id = id;
     }
 
-    public void setCreePar(UtilisateurFrontoffice cree_par) {
+    public void setCreePar(User cree_par) {
         this.creePar = cree_par;
     }
 

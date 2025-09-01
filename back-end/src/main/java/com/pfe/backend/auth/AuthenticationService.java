@@ -61,13 +61,13 @@ public class AuthenticationService {
   }
 
   private void saveUserToken(UtilisateurFrontoffice user, String jwtToken) {
-    var token = Token.builder()
-        .user(user)
-        .token(jwtToken)
-        .tokenType(TokenType.BEARER)
-        .expired(false)
-        .revoked(false)
-        .build();
+    var token = new Token();
+    token.setUser(user);
+    token.setToken(jwtToken);
+    token.setTokenType(TokenType.BEARER);
+    token.setExpired(false);
+    token.setRevoked(false);
+
     tokenRepository.save(token);
   }
 

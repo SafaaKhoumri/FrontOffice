@@ -63,10 +63,10 @@ const Dashboard = () => {
       setError(null);
       
       const token = localStorage.getItem('frontoffice_token');
-      if (!token) {
+      /*if (!token) {
         setError('Token manquant - Redirection vers login nécessaire');
         return;
-      }
+      }*/
 
       console.log('🔄 Chargement des données du portail:', portailCode);
 
@@ -143,7 +143,7 @@ const Dashboard = () => {
     if (!url || url.trim() === '') return true;
     
     // Vérifier si c'est une URL relative qui commence par / mais qui n'est pas complète
-    if (url.startsWith('/') && !url.includes('http')) {
+    if (url.startsWith('/') && !url.includes('https')) {
       return true;
     }
     
@@ -155,7 +155,7 @@ const handleMenuClick = (menuItem) => {
   setActiveMenu(menuItem.id || menuItem.code);
   setCurrentMenuData(menuItem);
   
-  // 🔥 CORRECTION : Vérifier les sous_menus ET menus
+  //Vérifier les sous_menus ET menus
   const hasSubMenus = (menuItem.sous_menus && menuItem.sous_menus.length > 0) || 
                      (menuItem.menus && menuItem.menus.length > 0);
   
@@ -188,7 +188,7 @@ const handleMenuClick = (menuItem) => {
   console.log('📍 Menu cliqué:', menuItem);
 };
 
-  // ⭐ FONCTION POUR RETOURNER AU DASHBOARD
+  // FONCTION POUR RETOURNER AU DASHBOARD
   const handleBackToDashboard = () => {
     setShowIframe(false);
     setShowEmptyUrlMessage(false);
@@ -307,7 +307,7 @@ const handleMenuClick = (menuItem) => {
 {portailData.groupMenu && portailData.groupMenu.map((group) => {
   const isExpanded = expandedMenus[group.id];
   
-  // 🔥 CORRECTION : Gérer sous_menus de l'API
+  //Gérer sous_menus de l'API
   const subMenus = group.sous_menus || group.menus || [];
   const hasMenus = subMenus && subMenus.length > 0;
 
@@ -330,7 +330,7 @@ const handleMenuClick = (menuItem) => {
         )}
       </button>
 
-      {/* 🔥 FONCTION RÉCURSIVE pour afficher les sous-menus */}
+      {/* FONCTION RÉCURSIVE pour afficher les sous-menus */}
       {hasMenus && isExpanded && sidebarOpen && (
         <div className="ml-6 mt-1 space-y-1">
           {subMenus.map((menu) => {

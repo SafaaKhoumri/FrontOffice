@@ -19,18 +19,9 @@ const LoginPage = () => {
   
   const navigate = useNavigate();
 
-  // Configuration axios
-  const apiClient = axios.create({
-    baseURL: 'http://localhost:8087/api/frontoffice',
-    withCredentials: true
-  });
+
 
   useEffect(() => {
-    // Vérifier s'il y a déjà un token valide
-    const token = localStorage.getItem('frontoffice_token');
-    if (token) {
-      verifyTokenAndRedirect(token);
-    }
 
     // Générer les particules d'animation
     const newParticles = Array.from({ length: 20 }, (_, i) => ({
@@ -46,7 +37,7 @@ const LoginPage = () => {
   useEffect(() => {
     console.log(" config :",config.baseURL);
   }, []);
-  const verifyTokenAndRedirect = async (token) => {
+  /*const verifyTokenAndRedirect = async (token) => {
     try {
       const response = await apiClient.get('/auth/verify', {
         headers: { 'Authorization': token }
@@ -61,16 +52,16 @@ const LoginPage = () => {
       // Token invalide, on reste sur la page de login
       localStorage.removeItem('frontoffice_token');
     }
-  };
+  };*/
 
-  const getPortailCodeByRole = (roleCode) => {
+  /*const getPortailCodeByRole = (roleCode) => {
     const portailMapping = {
       'TRANSITAIRE': 'TRANS_001',
       'IMPORTATEUR': 'IMP_001',
       'EXPORTATEUR': 'EXP_001'
     };
     return portailMapping[roleCode] || 'TRANS_001';
-  };
+  };*/
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -103,9 +94,10 @@ const LoginPage = () => {
       console.log('Tentative de connexion pour:', formData.email , formData.password);
 
       // Appel API de connexion
-       await axios.post('http://localhost:8085/api/frontoffice/auth/login', {
+       await axios.post('http://localhost:8087/api/frontoffice/auth/login', {
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        code: config.codePortail
       },
       {
         headers: {
@@ -114,10 +106,9 @@ const LoginPage = () => {
         withCredentials: true 
       },
     ).then(response =>{
-      console.log('Réponse du serveur:', response.data)
-      localStorage.setItem('frontoffice_token', response.data.token);
-        localStorage.setItem('user_info', JSON.stringify(response.data.user));
-        localStorage.setItem('portail_code', response.data.portailCode);
+  
+      console.log('Réponse du serveur:', response)
+      
          // Rediriger vers le portail approprié
         navigate(response.data.redirectUrl);
     } );
@@ -136,7 +127,7 @@ const LoginPage = () => {
         if (error.response.data && error.response.data.message) {
           setError(error.response.data.message);
         } else if (error.response.status === 404) {
-          setError('Service non disponible. Vérifiez que le serveur est démarré.');
+          setError('Email ou mot de passe incorrect');
         } else if (error.response.status === 400) {
           setError('Email ou mot de passe incorrect');
         } else {

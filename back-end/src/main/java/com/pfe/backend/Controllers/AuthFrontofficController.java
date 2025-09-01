@@ -213,8 +213,8 @@ public class AuthFrontofficController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(HttpServletRequest request1,
-                                               @RequestBody Map<Object,Object> request,
-                                               HttpServletResponse response) {
+                                   @RequestBody Map<Object,Object> request,
+                                   HttpServletResponse response) {
         String origin = request1.getHeader("Origin");
         String xForwardedProto = request1.getHeader("X-Forwarded-Proto");
         boolean isSecure = request1.isSecure() ||
@@ -223,12 +223,13 @@ public class AuthFrontofficController {
 
         boolean isLocalhost = origin != null && origin.contains("localhost");
 
-
         AuthenticationResponse authResponse = service.authenticate(request);
 
+        // Changez le nom du cookie ici
+        String cookieName = "jwt1"; // Ou tout autre nom que vous voulez
+
         // Création du cookie JWT
-        Cookie jwtCookie = new Cookie("jwt", authResponse.getAccessToken());
-        // Pas de méthode setSameSite : ajout manuel de l'attribut SameSite
+        Cookie jwtCookie = new Cookie(cookieName, authResponse.getAccessToken());
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(24 * 60 * 60);
@@ -239,7 +240,8 @@ public class AuthFrontofficController {
 
         String sameSite = isLocalhost ? "Lax" : "None";
         String cookieHeader = String.format(
-                "jwt=%s; HttpOnly; Path=/; Max-Age=%d; SameSite=%s%s",
+                "%s=%s; HttpOnly; Path=/; Max-Age=%d; SameSite=%s%s",
+                cookieName,  // Utilisez la variable ici aussi
                 authResponse.getAccessToken(),
                 24 * 60 * 60,
                 sameSite,
@@ -250,6 +252,7 @@ public class AuthFrontofficController {
 
         // Logs pour debugging
         System.out.println("=== COOKIE CONFIGURATION ===");
+        System.out.println("Cookie Name: " + cookieName);
         System.out.println("Origin: " + origin);
         System.out.println("X-Forwarded-Proto: " + xForwardedProto);
         System.out.println("Is Secure: " + isSecure);
@@ -260,9 +263,13 @@ public class AuthFrontofficController {
         System.out.println("User found: " + user.getRole().getNom());
         List<Portail> portail = portailRepository.findByRoleId(user.getRole().getId());
 
-        Portail p=portailRepository.findByCode(String.valueOf(request.get("code"))).get();
-        if(!p.getRole().contains(user.getRole())){
-            return ResponseEntity.notFound().build();
+        Optional<Portail> p = portailRepository.findByCode(String.valueOf(request.get("code")));
+        if(p.isPresent()) {
+            if (!p.get().getRole().contains(user.getRole())) {
+                return ResponseEntity.notFound().build();
+            }
+        } else {
+            return ResponseEntity.noContent().build();
         }
 
         Map<Object,Object> data = new HashMap<>();
@@ -270,7 +277,6 @@ public class AuthFrontofficController {
         data.put("redirectUrl","/portail/"+portail.get(0).getCode());
         data.put("user", user);
 
-        // Optionnel : ne pas renvoyer le token dans le body si tu veux plus de sécurité
         return ResponseEntity.ok(data);
     }
 
