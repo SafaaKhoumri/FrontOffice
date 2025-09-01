@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //    } else
     if (request.getCookies() != null) {
       for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
-        if ("jwt".equals(cookie.getName())) {
+        if ("jwt1".equals(cookie.getName())) {
           jwt = cookie.getValue();
           break;
         }

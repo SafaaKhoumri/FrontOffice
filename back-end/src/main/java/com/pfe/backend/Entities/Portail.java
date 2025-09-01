@@ -37,7 +37,9 @@ public class Portail {
 
     @ManyToOne
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.PortailView.class })
-    private UtilisateurFrontoffice utilisateur;
+    private User utilisateur;
+
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JsonView({ menu_portail_view.withoutGroupMenu.class, menu_portail_view.PortailView.class })
@@ -150,9 +152,7 @@ public class Portail {
         this.date_creation = date_creation;
     }
 
-    public void setUtilisateur(UtilisateurFrontoffice utilisateur) {
-        this.utilisateur = utilisateur;
-    }
+
 
     public void setRole(List<Role> role) {
         this.role = role;
@@ -174,9 +174,7 @@ public class Portail {
         return date_creation;
     }
 
-    public UtilisateurFrontoffice getUtilisateur() {
-        return utilisateur;
-    }
+
 
     public List<Role> getRole() {
         return role;
