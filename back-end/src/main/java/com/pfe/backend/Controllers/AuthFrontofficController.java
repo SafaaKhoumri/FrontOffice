@@ -279,30 +279,15 @@ public class AuthFrontofficController {
 
         return ResponseEntity.ok(data);
     }
+    @GetMapping("/a")
+    public void a(){
+        System.out.println("a");
+    }
 
-    @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> logout(@RequestHeader("Authorization") String token) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            // Chercher la session par token
-            Optional<SessionFrontoffice> sessionOpt = sessionRepository.findByTokenAndActif(token, true);
-
-            if (sessionOpt.isPresent()) {
-                SessionFrontoffice session = sessionOpt.get();
-                session.setActif(false);
-                sessionRepository.save(session);
-            }
-
-            response.put("success", true);
-            response.put("message", "Déconnexion réussie");
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Erreur lors de la déconnexion");
-            return ResponseEntity.internalServerError().body(response);
-        }
+    @GetMapping("/logout")
+    public ResponseEntity<?> logout(){
+        System.out.println("=== LOGOUT ===");
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/verify")
