@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class DataLoader implements CommandLineRunner {
+public class DataLoader  { //implements CommandLineRunner
     @Autowired
     UtilisateurFrontofficRepositiry utilisateurRepo;
     @Autowired
@@ -37,7 +37,7 @@ public class DataLoader implements CommandLineRunner {
     UtilisateurFrontofficRepositiry utilisateurFrontofficRepositiry;
 
     @Transactional
-    @Override
+    //@Override
     public void run(String... args) throws Exception {
         /*com.pfe.backend.Entities.Role impo = new com.pfe.backend.Entities.Role();
         impo.setNom("Importateur");

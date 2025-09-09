@@ -450,4 +450,8 @@ public class PortailFrontofficController {
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
         }
     }*/
+    @GetMapping("/a")
+    public void a(){
+        System.out.println("a");
+    }
 }
