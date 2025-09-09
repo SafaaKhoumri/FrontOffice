@@ -29,12 +29,15 @@ import {
   Construction
 } from 'lucide-react';
 import { useAxiosInstance } from '../hook/useAxiosInstance';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Dashboard = () => {
   // Récupération du code portail depuis l'URL
   const portailCode = window.location.pathname.split('/').pop() || 'IMP_001';
 
   const axiosInstance = useAxiosInstance();
+  const navigate = useNavigate();
   
   // États pour l'interface
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -61,8 +64,6 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const token = localStorage.getItem('frontoffice_token');
       /*if (!token) {
         setError('Token manquant - Redirection vers login nécessaire');
         return;
@@ -103,12 +104,14 @@ const Dashboard = () => {
 
   // Fonction de déconnexion
   const handleLogout = () => {
-    localStorage.removeItem('frontoffice_token');
-    localStorage.removeItem('user_info');
-    localStorage.removeItem('portail_code');
+    axiosInstance.get("/api/frontoffice/auth/logout").then(() => {
+      console.log('🚪 Déconnexion effectuée');
+      navigate('/login');
+    }).catch(err => {
+      console.error('❌ Erreur lors de la déconnexion:', err);
+    });
     
-    console.log('🚪 Déconnexion effectuée');
-    window.location.href = '/login';
+    
   };
 
   // Fonction pour obtenir l'icône d'un menu
@@ -137,6 +140,8 @@ const Dashboard = () => {
       [menuId]: !prev[menuId]
     }));
   };
+
+  useEffect(() => {console.log("l'url : ",currentUrl)},[currentUrl])
 
   // ⭐ FONCTION POUR VÉRIFIER SI UNE URL EST VIDE OU NON IMPLÉMENTÉE
   const isEmptyOrNotImplemented = (url) => {
@@ -167,7 +172,9 @@ const handleMenuClick = (menuItem) => {
   
   const menuTitle = menuItem.title || menuItem.nom;
   const menuUrl = menuItem.url;
-  
+  if(!menuItem.hasOwnProperty("url")){
+    return setShowEmptyUrlMessage(false);
+  } 
   // Vérifier si l'URL est vide ou non implémentée
   if (isEmptyOrNotImplemented(menuUrl)) {
     console.log('⚠️ URL vide ou non implémentée pour le menu:', menuTitle);
@@ -571,7 +578,7 @@ const handleMenuClick = (menuItem) => {
 
         {/* ⭐ CONTENU PRINCIPAL AVEC IFRAME ET MESSAGE D'URL VIDE */}
         <main className="flex-1 overflow-hidden">
-          {showIframe && currentUrl ? (
+          {(showIframe && currentUrl) ? (
             <div className="h-full relative">
               {/* Indicateur de chargement */}
               {iframeLoading && (
@@ -590,10 +597,10 @@ const handleMenuClick = (menuItem) => {
                 className="w-full h-full border-0"
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
-                sandbox="allow-same-origin allow-scripts allow-forms allow-navigation"
+                sandbox="allow-same-origin allow-scripts allow-forms"
               />
             </div>
-          ) : showEmptyUrlMessage ? (
+          ) : (showEmptyUrlMessage) ? (
             /* ⭐ MESSAGE POUR URL VIDE OU NON IMPLÉMENTÉE */
             <div className="flex-1 flex items-center justify-center bg-gray-50">
               <div className="text-center max-w-lg mx-auto p-8">
